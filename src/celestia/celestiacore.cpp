@@ -678,7 +678,7 @@ void CelestiaCore::mouseMove(float dx, float dy, int modifiers)
 
             // In order for the zoom to have the right feel, it should be
             // exponential.
-            float newFOV = minFOV + (float) exp(log(fov - minFOV) + amount * 4);
+            float newFOV = fov * static_cast<float>(std::exp(amount * 4.0f));
 
             updateFOV(newFOV, is_set(interactionFlags, InteractionFlags::FocusZooming) ? dragStart : std::nullopt, view);
         }
@@ -2433,9 +2433,9 @@ Eigen::Vector3f CelestiaCore::getPickRay(float x, float y, const celestia::View 
 
 void CelestiaCore::updateFOV(float newFOV, const std::optional<Eigen::Vector2f> &focus, const celestia::View *view)
 {
-    float minFOV = renderer->getProjectionMode()->getMinimumFOV();
     float maxFOV = renderer->getProjectionMode()->getMaximumFOV();
-    newFOV = std::clamp(newFOV, minFOV, maxFOV);
+    if (newFOV > maxFOV)
+        newFOV = maxFOV;
 
     // Calculate the rays at the position where the
     // dragging starts, and rotate the observer so
