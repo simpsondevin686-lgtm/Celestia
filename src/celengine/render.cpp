@@ -3297,7 +3297,7 @@ void Renderer::renderPlanet(Body& body,
         (max(nearPlaneDistance, altitude) * pixelSize);
 
     float maxDiscSize = (starStyle == StarStyle::ScaledDiscStars) ? MaxScaledDiscStarSize : 1.0f;
-    if (discSizeInPixels >= maxDiscSize && body.hasVisibleGeometry())
+    if (body.hasVisibleGeometry())
     {
         auto bodyFeaturesManager = GetBodyFeaturesManager();
 
@@ -3744,12 +3744,12 @@ void Renderer::addRenderListEntries(RenderListEntry& rle, // NOSONAR(cpp:S3776)
     bool visibleAsPoint = rle.appMag < faintestPlanetMag && body.isVisibleAsPoint();
     const BodyFeaturesManager* bodyFeaturesManager = GetBodyFeaturesManager();
 
-    if (rle.discSizeInPixels > 1 || visibleAsPoint || isLabeled)
+    if (true /* allow surface meshes to render at any zoom/distance */)
     {
         rle.renderableType = RenderListEntry::RenderableBody;
         rle.body = &body;
 
-        if (body.getGeometry() != engine::GeometryHandle::Invalid && rle.discSizeInPixels > 1)
+        if (body.getGeometry() != engine::GeometryHandle::Invalid)
         {
             const RenderGeometry* geometry = m_geometryManager->find(body.getGeometry());
             if (geometry == nullptr)
