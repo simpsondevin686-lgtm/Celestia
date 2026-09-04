@@ -69,7 +69,8 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
 
     // Calculate the difference at double precision *before* converting to float.
     // This is very important for stars that are far from the origin.
-    Vector3f relPos = (starPos.cast<double>() - obsPos).cast<float>();
+    Vector3d relPosD = starPos.cast<double>() - obsPos;
+    Vector3f relPos = relPosD.cast<float>();
     float    orbitalRadius = star.getOrbitalRadius();
     bool     hasOrbit = orbitalRadius > 0.0f;
 
@@ -216,7 +217,7 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
         }
         else
         {
-            Matrix3f viewMat = renderer->getCameraOrientationf().toRotationMatrix();
+            Matrix3d viewMatD = renderer->getCameraOrientation().toRotationMatrix();
             Vector3f viewMatZ = viewMat.row(2);
 
             RenderListEntry rle;
