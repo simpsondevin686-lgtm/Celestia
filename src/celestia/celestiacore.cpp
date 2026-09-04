@@ -1745,6 +1745,67 @@ void CelestiaCore::setStartURL(const string &url)
 
 void CelestiaCore::tick()
 {
+
+    // --- Black Hole Ejection / Smooth Slingshot Logic ---
+    static bool isSlingshotActive = false;
+    static Eigen::Vector3d slingshotTargetPos;
+    static Eigen::Vector3d slingshotStartPos;
+    static double slingshotProgress = 0.0;
+    static double slingshotDuration = 5.0; // seconds for smooth deceleration
+
+    Selection sel = getSelection();
+    if (sel.isBody())
+    {
+        const Body* body = sel.body();
+        if (body && (body->getSphericalType() == Body::BlackHole || body->getObjectType() == Body::BlackHole))
+        {
+            Point3d camPos = observer.getPosition();
+            Point3d bhPos = body->getPosition(sim->getJulianDay());
+            double distToBH = (camPos - bhPos).length(); // in kilometers or AU depending on engine scale
+            
+            // Trigger threshold when very close to event horizon/center
+            double eventHorizonRadius = body->getRadius() * 3.0; 
+            if (distToBH < eventHorizonRadius && !isSlingshotActive)
+            {
+                isSlingshotActive = true;
+                slingshotProgress = 0.0;
+                slingshotStartPos = Eigen::Vector3d(camPos.x, camPos.y, camPos.z);
+                
+                // Pick a random direction vector for light-year displacement
+                double theta = ((double)rand() / RAND_MAX) * 2.0 * M_PI;
+                double phi = acos(2.0 * ((double)rand() / RAND_MAX) - 1.0);
+                
+                // Distance ~ 2 to 5 Light Years in kilometers (1 LY ~ 9.461e12 km)
+                double distLightYears = 2.0 + (((double)rand() / RAND_MAX) * 3.0);
+                double ejectionDist = distLightYears * 9.461e12;
+                
+                Eigen::Vector3d randomDir(
+                    sin(phi) * cos(theta),
+                    sin(phi) * sin(theta),
+                    cos(phi)
+                );
+                
+                slingshotTargetPos = slingshotStartPos + randomDir * ejectionDist;
+            }
+        }
+    }
+
+    if (isSlingshotActive)
+    {
+        slingshotProgress += dt / slingshotDuration;
+        if (slingshotProgress >= 1.0)
+        {
+            slingshotProgress = 1.0;
+            isSlingshotActive = false;
+        }
+        
+        // Smooth ease-out deceleration curve: 1 - (1 - t)^3
+        double easeOut = 1.0 - pow(1.0 - slingshotProgress, 3.0);
+        Eigen::Vector3d currentPos = slingshotStartPos + (slingshotTargetPos - slingshotStartPos) * easeOut;
+        
+        observer.setPosition(Point3d(currentPos.x(), currentPos.y(), currentPos.z()));
+    }
+
     tick(timer->getTime() - sysTime);
 }
 
