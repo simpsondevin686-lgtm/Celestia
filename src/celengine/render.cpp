@@ -2819,7 +2819,7 @@ void Renderer::renderPlanetAtmosphere(Body& body,
     }
     else
     {
-        setupPlanetLighting(body, pos, now, nearPlaneDistance, altitude, rp, lsOpt.emplace(), q);
+        setupPlanetLighting(body, pos, now, nearPlaneDistance, altitude, std::nullopt, rp, lsOpt.emplace(), q);
     }
 
     // At this point we know the optional is initialized, so the following is safe
@@ -3324,7 +3324,7 @@ void Renderer::renderPlanet(Body& body,
         RenderProperties rp;
         LightingState lights;
         Quaterniond q;
-        setupPlanetLighting(body, pos, now, nearPlaneDistance, altitude, rp, lights, q);
+        setupPlanetLighting(body, pos, now, nearPlaneDistance, altitude, std::nullopt, rp, lights, q);
 
         // Cache this lighting so the atmosphere entry can reuse it this frame;
         // only atmospheric bodies have such an entry. Copy the eclipse shadows
