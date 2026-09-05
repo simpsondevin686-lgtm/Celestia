@@ -1431,7 +1431,8 @@ void Renderer::renderItem(const RenderListEntry& rle,
                      rle.position,
                      rle.distance,
                      rle.appMag,
-                     observer,
+                     std::nullopt,
+                      observer,
                      nearPlaneDistance, farPlaneDistance,
                      m);
         break;
