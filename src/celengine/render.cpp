@@ -1,3 +1,24 @@
+
+static Color calculateDiscoColor(double currentTime)
+{
+    // Smooth 60-second period rainbow cycle
+    double hue = std::fmod(currentTime, 60.0) / 60.0 * 6.0;
+    int i = static_cast<int>(hue);
+    float f = static_cast<float>(hue - i);
+    float q = 1.0f - f;
+
+    switch (i % 6)
+    {
+        case 0: return Color(1.0f, f, 0.0f);
+        case 1: return Color(q, 1.0f, 0.0f);
+        case 2: return Color(0.0f, 1.0f, f);
+        case 3: return Color(0.0f, q, 1.0f);
+        case 4: return Color(f, 0.0f, 1.0f);
+        case 5: return Color(1.0f, 0.0f, q);
+    }
+    return Color(1.0f, 1.0f, 1.0f);
+}
+
 // render.cpp
 //
 // Copyright (C) 2001-2009, the Celestia Development Team
