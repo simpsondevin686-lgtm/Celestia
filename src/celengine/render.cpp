@@ -3354,7 +3354,8 @@ void Renderer::renderPlanet(Body& body,
         const auto surfaceColor = body.getSurface().color.linearize(gl::sRGBRendering);
         if (float maxCoeff = surfaceColor.toVector3().maxCoeff(); maxCoeff > 0.0f) // ignore [ 0 0 0 ]; used by old addons to make objects not get rendered as point
         {
-            renderObjectAsPoint(PointObjectInfo{pos, static_cast<float>(distance), body.getRadius()},
+            double apparentPixelSize = (static_cast<double>(body.getRadius()) / static_cast<double>(distance)) / static_cast<double>(pixelSize);
+            if (apparentPixelSize < 1.0) renderObjectAsPoint(PointObjectInfo{pos, static_cast<float>(distance), body.getRadius()},
                                 appMag,
                                 discSizeInPixels,
                                 surfaceColor * (1.0f / maxCoeff), // normalize point color; 'darkness' is handled by size of point determined by GeomAlbedo.
