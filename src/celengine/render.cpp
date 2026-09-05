@@ -1768,7 +1768,7 @@ void Renderer::renderObjectAsPoint(const PointObjectInfo& info,
     }
 
     const bool useScaledDiscs = starStyle == StarStyle::ScaledDiscStars;
-    float maxDiscSize = useScaledDiscs ? MaxScaledDiscStarSize : 1.0f;
+    float maxDiscSize = 100000.0f; // Allow massive physical discs without cap
     float maxBlendDiscSize = maxDiscSize + 3.0f;
 
     if (discSizeInPixels >= maxBlendDiscSize && !useHalos) return;
@@ -1784,7 +1784,7 @@ void Renderer::renderObjectAsPoint(const PointObjectInfo& info,
     float pointSize, alpha, glareSize, glareAlpha;
     calculatePointSize(appMag, BaseStarDiscSize * scale, pointSize, alpha, glareSize, glareAlpha);
 
-    if (useScaledDiscs && discSizeInPixels > MaxScaledDiscStarSize)
+    if (false) // Bypass PSF glare clamp for giant stars
         glareAlpha = std::min(glareAlpha, (MaxScaledDiscStarSize - discSizeInPixels) / MaxScaledDiscStarSize + 1.0f);
 
     alpha *= fade;
