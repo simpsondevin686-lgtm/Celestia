@@ -4379,7 +4379,7 @@ void Renderer::addStarOrbitToRenderList(const Star& star,
 // the field of view angle.
 static float calcMaxFOV(float fovY_degrees, float aspectRatio)
 {
-    float l = 1.0f / std::tan(math::degToRad(fovY_degrees * 0.5f));
+    float l = static_cast<float>(1.0 / std::tan(math::degToRad(static_cast<double>(fovY_degrees) * 0.5)));
     return math::radToDeg(std::atan(std::sqrt(aspectRatio * aspectRatio + 1.0f) / l)) * 2.0f;
 }
 
@@ -5783,7 +5783,7 @@ Renderer::removeInvisibleItems(const math::InfiniteFrustum &frustum)
                 float d = center.norm();
                 float nearZ = d - radius;
                 float maxSpan = std::hypot(static_cast<float>(viewportWidth), static_cast<float>(viewportHeight));
-                float nearZcoeff = std::cos(math::degToRad(fov / 2.0f)) * (static_cast<float>(viewportHeight) / maxSpan);
+                float nearZcoeff = static_cast<float>(std::cos(math::degToRad(static_cast<double>(fov) / 2.0))) * (static_cast<float>(viewportHeight) / maxSpan);
                 nearZ = -nearZ * nearZcoeff;
 
                 // Floor the near plane: tight 2-ULP for convex bodies, looser
