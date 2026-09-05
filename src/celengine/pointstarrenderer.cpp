@@ -122,7 +122,7 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
         // planets.
         if (distance > SolarSystemMaxDistance)
         {
-            if (starStyle == StarStyle::PointSpreadFunction && info.discSizeInPixels < 2.0f)
+            if (starStyle == StarStyle::PointSpreadFunction)
             {
                 // Linear-radiance PSF renderer.  The shader receives a
                 // per-vertex peak radiance (cone volume = 1/3 base area
@@ -196,7 +196,7 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
 
                 if (glareSize != 0.0f)
                     glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), glareSize);
-                if (pointSize != 0.0f && info.discSizeInPixels < 2.0f)
+                if (pointSize != 0.0f)
                     starVertexBuffer->addStar(relPos, Color(starColor, alpha), pointSize);
             }
 
