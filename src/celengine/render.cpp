@@ -1,7 +1,6 @@
 
 static Color calculateDiscoColor(double currentTime)
 {
-    // Smooth 60-second period rainbow cycle
     double hue = std::fmod(currentTime, 60.0) / 60.0 * 6.0;
     int i = static_cast<int>(hue);
     float f = static_cast<float>(hue - i);
@@ -1408,7 +1407,6 @@ void Renderer::renderItem(const RenderListEntry& rle,
                      rle.position,
                      rle.distance,
                      rle.appMag,
-                     rle.orientation,
                      observer,
                      nearPlaneDistance, farPlaneDistance,
                      m);
@@ -1545,27 +1543,6 @@ void Renderer::render(const Observer& observer,
     if (util::is_set(renderFlags, RenderFlags::ShowSolarSystemObjects | RenderFlags::ShowOrbits))
     {
         buildNearSystemsLists(universe, observer, xfrustum, now);
-    }
-
-    if (auto cockpitObject = observer.getCockpit(); !cockpitObject.empty())
-    {
-        Body *body = cockpitObject.body();
-        const auto& cockpitDefinition = GetBodyFeaturesManager()->getCockpit(body);
-        if (cockpitDefinition.has_value())
-        {
-            const auto& cockpit = cockpitDefinition.value();
-            RenderListEntry rle;
-
-            Quaternionf originalOrientation = (Quaterniond(m_cameraTransform) * observer.getUntransformedOrientation()).cast<float>();
-            Vector3f position = originalOrientation.conjugate() * cockpit.position * body->getRadius();
-            rle.position = position;
-            rle.distance = position.norm();
-            rle.centerZ  = position.dot(originalOrientation.toRotationMatrix().row(2));
-            rle.discSizeInPixels = body->getRadius() / (rle.distance * pixelSize);
-            rle.orientation = cockpit.orientation;
-
-            addRenderListEntries(rle, *body, false);
-        }
     }
 
     setupSecondaryLightSources(secondaryIlluminators, lightSourceList);
@@ -1789,7 +1766,7 @@ void Renderer::renderObjectAsPoint(const PointObjectInfo& info,
     }
 
     const bool useScaledDiscs = starStyle == StarStyle::ScaledDiscStars;
-    float maxDiscSize = 100000.0f; // Allow massive physical discs without cap
+    float maxDiscSize = useScaledDiscs ? MaxScaledDiscStarSize : 1.0f;
     float maxBlendDiscSize = maxDiscSize + 3.0f;
 
     if (discSizeInPixels >= maxBlendDiscSize && !useHalos) return;
@@ -1805,7 +1782,7 @@ void Renderer::renderObjectAsPoint(const PointObjectInfo& info,
     float pointSize, alpha, glareSize, glareAlpha;
     calculatePointSize(appMag, BaseStarDiscSize * scale, pointSize, alpha, glareSize, glareAlpha);
 
-    if (false) // Bypass PSF glare clamp for giant stars
+    if (useScaledDiscs && discSizeInPixels > MaxScaledDiscStarSize)
         glareAlpha = std::min(glareAlpha, (MaxScaledDiscStarSize - discSizeInPixels) / MaxScaledDiscStarSize + 1.0f);
 
     alpha *= fade;
@@ -2818,7 +2795,7 @@ void Renderer::renderPlanetAtmosphere(Body& body,
     }
     else
     {
-        setupPlanetLighting(body, pos, now, nearPlaneDistance, altitude, std::nullopt, rp, lsOpt.emplace(), q);
+        setupPlanetLighting(body, pos, now, nearPlaneDistance, altitude, rp, lsOpt.emplace(), q);
     }
 
     // At this point we know the optional is initialized, so the following is safe
@@ -3093,7 +3070,6 @@ void Renderer::setupPlanetLighting(Body& body, // NOSONAR(cpp:S107,cpp:S3776)
                                    double now,
                                    float nearPlaneDistance,
                                    float altitude,
-                                   const std::optional<Quaternionf>& orientation,
                                    RenderProperties& rp,
                                    LightingState& lights,
                                    Quaterniond& q)
@@ -3120,7 +3096,7 @@ void Renderer::setupPlanetLighting(Body& body, // NOSONAR(cpp:S107,cpp:S3776)
         q = body.getRotationModel(now)->spin(now) *
                         body.getEclipticToEquatorial(now);
 
-        rp.orientation = orientation.value_or(body.getGeometryOrientation() * q.cast<float>());
+        rp.orientation = body.getGeometryOrientation() * q.cast<float>();
 
         if (util::is_set(labelMode, RenderLabels::LocationLabels))
             bodyFeaturesManager->computeLocations(&body, *m_geometryManager->geometryManager());
@@ -3306,7 +3282,6 @@ void Renderer::renderPlanet(Body& body,
                             const Vector3f& pos,
                             double distance,
                             float appMag,
-                            const std::optional<Quaternionf>& orientation,
                             const Observer& observer,
                             float nearPlaneDistance,
                             float farPlaneDistance,
@@ -3318,18 +3293,14 @@ void Renderer::renderPlanet(Body& body,
         (max(nearPlaneDistance, altitude) * pixelSize);
 
     float maxDiscSize = (starStyle == StarStyle::ScaledDiscStars) ? MaxScaledDiscStarSize : 1.0f;
-    if (body.hasVisibleGeometry())
+    if (discSizeInPixels >= maxDiscSize && body.hasVisibleGeometry())
     {
         auto bodyFeaturesManager = GetBodyFeaturesManager();
 
         RenderProperties rp;
         LightingState lights;
         Quaterniond q;
-        std::optional<Quaternionf> renderOrientation;
-        if (orientation.has_value())
-            renderOrientation = *orientation * observer.getUntransformedOrientation().cast<float>();
-        setupPlanetLighting(body, pos, now, nearPlaneDistance, altitude,
-                            renderOrientation, rp, lights, q);
+        setupPlanetLighting(body, pos, now, nearPlaneDistance, altitude, rp, lights, q);
 
         // Cache this lighting so the atmosphere entry can reuse it this frame;
         // only atmospheric bodies have such an entry. Copy the eclipse shadows
@@ -3375,8 +3346,7 @@ void Renderer::renderPlanet(Body& body,
         const auto surfaceColor = body.getSurface().color.linearize(gl::sRGBRendering);
         if (float maxCoeff = surfaceColor.toVector3().maxCoeff(); maxCoeff > 0.0f) // ignore [ 0 0 0 ]; used by old addons to make objects not get rendered as point
         {
-            double apparentPixelSize = (static_cast<double>(body.getRadius()) / static_cast<double>(distance)) / static_cast<double>(pixelSize);
-            if (apparentPixelSize < 1.0) renderObjectAsPoint(PointObjectInfo{pos, static_cast<float>(distance), body.getRadius()},
+            renderObjectAsPoint(PointObjectInfo{pos, static_cast<float>(distance), body.getRadius()},
                                 appMag,
                                 discSizeInPixels,
                                 surfaceColor * (1.0f / maxCoeff), // normalize point color; 'darkness' is handled by size of point determined by GeomAlbedo.
@@ -3766,12 +3736,12 @@ void Renderer::addRenderListEntries(RenderListEntry& rle, // NOSONAR(cpp:S3776)
     bool visibleAsPoint = rle.appMag < faintestPlanetMag && body.isVisibleAsPoint();
     const BodyFeaturesManager* bodyFeaturesManager = GetBodyFeaturesManager();
 
-    if (true /* allow surface meshes to render at any zoom/distance */)
+    if (rle.discSizeInPixels > 1 || visibleAsPoint || isLabeled)
     {
         rle.renderableType = RenderListEntry::RenderableBody;
         rle.body = &body;
 
-        if (body.getGeometry() != engine::GeometryHandle::Invalid)
+        if (body.getGeometry() != engine::GeometryHandle::Invalid && rle.discSizeInPixels > 1)
         {
             const RenderGeometry* geometry = m_geometryManager->find(body.getGeometry());
             if (geometry == nullptr)
@@ -4401,7 +4371,7 @@ void Renderer::addStarOrbitToRenderList(const Star& star,
 // the field of view angle.
 static float calcMaxFOV(float fovY_degrees, float aspectRatio)
 {
-    float l = static_cast<float>(1.0 / std::tan(math::degToRad(static_cast<double>(fovY_degrees) * 0.5)));
+    float l = 1.0f / std::tan(math::degToRad(fovY_degrees * 0.5f));
     return math::radToDeg(std::atan(std::sqrt(aspectRatio * aspectRatio + 1.0f) / l)) * 2.0f;
 }
 
@@ -5790,8 +5760,7 @@ Renderer::removeInvisibleItems(const math::InfiniteFrustum &frustum)
 
         Vector3f center = getCameraOrientationf().toRotationMatrix() * ri.position;
         // Test the object's bounding sphere against the view frustum
-        // Bypass radius culling cap for oversized stars
-        if (true || frustum.testSphere(center, cullRadius) != math::FrustumAspect::Outside)
+        if (frustum.testSphere(center, cullRadius) != math::FrustumAspect::Outside)
         {
             if (ri.discSizeInPixels <= 1.0f)
             {
@@ -5806,7 +5775,7 @@ Renderer::removeInvisibleItems(const math::InfiniteFrustum &frustum)
                 float d = center.norm();
                 float nearZ = d - radius;
                 float maxSpan = std::hypot(static_cast<float>(viewportWidth), static_cast<float>(viewportHeight));
-                float nearZcoeff = static_cast<float>(std::cos(math::degToRad(static_cast<double>(fov) / 2.0))) * (static_cast<float>(viewportHeight) / maxSpan);
+                float nearZcoeff = std::cos(math::degToRad(fov / 2.0f)) * (static_cast<float>(viewportHeight) / maxSpan);
                 nearZ = -nearZ * nearZcoeff;
 
                 // Floor the near plane: tight 2-ULP for convex bodies, looser
