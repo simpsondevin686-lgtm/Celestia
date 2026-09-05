@@ -218,7 +218,7 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
         else
         {
             Matrix3d viewMatD = renderer->getCameraOrientation().toRotationMatrix();
-            Vector3f viewMatZ = viewMat.row(2);
+            Vector3f viewMatZ = viewMatD.row(2).cast<float>();
 
             RenderListEntry rle;
             rle.renderableType = RenderListEntry::RenderableStar;
