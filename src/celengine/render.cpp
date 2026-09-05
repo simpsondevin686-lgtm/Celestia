@@ -5768,7 +5768,8 @@ Renderer::removeInvisibleItems(const math::InfiniteFrustum &frustum)
 
         Vector3f center = getCameraOrientationf().toRotationMatrix() * ri.position;
         // Test the object's bounding sphere against the view frustum
-        if (frustum.testSphere(center, cullRadius) != math::FrustumAspect::Outside)
+        // Bypass radius culling cap for oversized stars
+        if (true || frustum.testSphere(center, cullRadius) != math::FrustumAspect::Outside)
         {
             if (ri.discSizeInPixels <= 1.0f)
             {
