@@ -1,3 +1,6 @@
+#include <cmath>
+#include <Eigen/Core>
+#include <optional>
 
 static Eigen::Vector3f getDiscoRainbowColor(double appTime)
 {
