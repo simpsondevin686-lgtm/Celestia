@@ -1,5 +1,5 @@
 
-static Color getDiscoRainbowColor(double appTime)
+static Eigen::Vector3f getDiscoRainbowColor(double appTime)
 {
     // Full HSV rainbow smooth cycle across 60 seconds
     double hue = std::fmod(appTime, 60.0) / 60.0 * 6.0;
@@ -9,18 +9,18 @@ static Color getDiscoRainbowColor(double appTime)
 
     switch (i % 6)
     {
-        case 0: return Color(1.0f, f, 0.0f);
-        case 1: return Color(q, 1.0f, 0.0f);
-        case 2: return Color(0.0f, 1.0f, f);
-        case 3: return Color(0.0f, q, 1.0f);
-        case 4: return Color(f, 0.0f, 1.0f);
-        case 5: return Color(1.0f, 0.0f, q);
+        case 0: return Eigen::Vector3f(1.0f, f, 0.0f);
+        case 1: return Eigen::Vector3f(q, 1.0f, 0.0f);
+        case 2: return Eigen::Vector3f(0.0f, 1.0f, f);
+        case 3: return Eigen::Vector3f(0.0f, q, 1.0f);
+        case 4: return Eigen::Vector3f(f, 0.0f, 1.0f);
+        case 5: return Eigen::Vector3f(1.0f, 0.0f, q);
     }
-    return Color(1.0f, 1.0f, 1.0f);
+    return Eigen::Vector3f(1.0f, 1.0f, 1.0f);
 }
 
 
-static Color calculateDiscoColor(double currentTime)
+static Eigen::Vector3f calculateDiscoColor(double currentTime)
 {
     double hue = std::fmod(currentTime, 60.0) / 60.0 * 6.0;
     int i = static_cast<int>(hue);
@@ -29,14 +29,14 @@ static Color calculateDiscoColor(double currentTime)
 
     switch (i % 6)
     {
-        case 0: return Color(1.0f, f, 0.0f);
-        case 1: return Color(q, 1.0f, 0.0f);
-        case 2: return Color(0.0f, 1.0f, f);
-        case 3: return Color(0.0f, q, 1.0f);
-        case 4: return Color(f, 0.0f, 1.0f);
-        case 5: return Color(1.0f, 0.0f, q);
+        case 0: return Eigen::Vector3f(1.0f, f, 0.0f);
+        case 1: return Eigen::Vector3f(q, 1.0f, 0.0f);
+        case 2: return Eigen::Vector3f(0.0f, 1.0f, f);
+        case 3: return Eigen::Vector3f(0.0f, q, 1.0f);
+        case 4: return Eigen::Vector3f(f, 0.0f, 1.0f);
+        case 5: return Eigen::Vector3f(1.0f, 0.0f, q);
     }
-    return Color(1.0f, 1.0f, 1.0f);
+    return Eigen::Vector3f(1.0f, 1.0f, 1.0f);
 }
 
 // render.cpp
@@ -1311,16 +1311,16 @@ static Color legacyTintColor(float temp)
     // though these will almost never have planets for their light
     // to shine upon.
     if (temp > 30000.0f)
-        return Color(0.8f, 0.8f, 1.0f);
+        return Eigen::Vector3f(0.8f, 0.8f, 1.0f);
     else if (temp > 10000.0f)
-        return Color(0.9f, 0.9f, 1.0f);
+        return Eigen::Vector3f(0.9f, 0.9f, 1.0f);
     else if (temp > 5400.0f)
-        return Color(1.0f, 1.0f, 1.0f);
+        return Eigen::Vector3f(1.0f, 1.0f, 1.0f);
     else if (temp > 3900.0f)
-        return Color(1.0f, 0.9f, 0.8f);
+        return Eigen::Vector3f(1.0f, 0.9f, 0.8f);
     else if (temp > 2000.0f)
-        return Color(1.0f, 0.7f, 0.7f);
-    return Color(1.0f, 0.4f, 0.4f);
+        return Eigen::Vector3f(1.0f, 0.7f, 0.7f);
+    return Eigen::Vector3f(1.0f, 0.4f, 0.4f);
 }
 
 
